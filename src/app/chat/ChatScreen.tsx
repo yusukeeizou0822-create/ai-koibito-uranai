@@ -3,12 +3,11 @@
 import { useState } from 'react';
 
 import { characterGradient, defaultCharacterGradient, getCharacterInitial } from '@/lib/characterTheme';
-
-type Expression = 'smile' | 'shy' | 'worried' | 'serious';
+import type { ChatApiResponse, ChatRole, Expression } from '@/lib/chat/types';
 
 type Message = {
   id: string;
-  role: 'user' | 'assistant';
+  role: ChatRole;
   content: string;
   expression?: Expression;
 };
@@ -22,31 +21,13 @@ const EXPRESSION_LABELS: Record<Expression, string> = {
   serious: '真剣',
 };
 
-const DUMMY_REPLIES: Record<Expression, string> = {
-  smile: 'うん、今日も会えてうれしいな。ゆっくり話そう。',
-  shy: 'そんなこと言われると、ちょっと照れちゃうな……。',
-  worried: '大丈夫? 無理してない? ちゃんと休んでね。',
-  serious: 'それは大事な話だね。しっかり聞かせて。',
-};
-
 function createInitialMessages(characterName: string, userName: string): Message[] {
   return [
     {
-      id: 'dummy-1',
+      id: 'greeting',
       role: 'assistant',
       content: `${userName}、おかえりなさい。${characterName}だよ。今日はどんな一日だった?`,
       expression: 'smile',
-    },
-    {
-      id: 'dummy-2',
-      role: 'user',
-      content: '今日はちょっと疲れたかも。',
-    },
-    {
-      id: 'dummy-3',
-      role: 'assistant',
-      content: 'そっか、おつかれさま。無理してない? ゆっくり休んでね。',
-      expression: 'worried',
     },
   ];
 }
@@ -64,13 +45,15 @@ export function ChatScreen({
   const [expression, setExpression] = useState<Expression>('smile');
   const [input, setInput] = useState('');
   const [isReplying, setIsReplying] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
 
   const gradient = characterGradient[character.personalityKey] ?? defaultCharacterGradient;
 
-  function handleSend() {
+  async function handleSend() {
     const content = input.trim();
     if (!content || isReplying) return;
 
+    const history = messages.map((m) => ({ role: m.role, content: m.content }));
     const userMessage: Message = {
       id: `user-${Date.now()}`,
       role: 'user',
@@ -79,20 +62,32 @@ export function ChatScreen({
     setMessages((prev) => [...prev, userMessage]);
     setInput('');
     setIsReplying(true);
+    setErrorMessage('');
 
-    // Step7でClaude APIに置き換えるまでのダミー応答（実際のAI連携ではない）
-    setTimeout(() => {
-      const nextExpression = EXPRESSION_ORDER[(EXPRESSION_ORDER.indexOf(expression) + 1) % EXPRESSION_ORDER.length];
-      const assistantMessage: Message = {
-        id: `assistant-${Date.now()}`,
-        role: 'assistant',
-        content: DUMMY_REPLIES[nextExpression],
-        expression: nextExpression,
-      };
+    try {
+      const res = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: content, history }),
+      });
+      const data = await res.json();
+
+      if (!res.ok) {
+        setErrorMessage(typeof data.error === 'string' ? data.error : 'エラーが発生しました。');
+        return;
+      }
+
+      const { reply, expression: nextExpression } = data as ChatApiResponse;
       setExpression(nextExpression);
-      setMessages((prev) => [...prev, assistantMessage]);
+      setMessages((prev) => [
+        ...prev,
+        { id: `assistant-${Date.now()}`, role: 'assistant', content: reply, expression: nextExpression },
+      ]);
+    } catch {
+      setErrorMessage('通信エラーが発生しました。もう一度お試しください。');
+    } finally {
       setIsReplying(false);
-    }, 700);
+    }
   }
 
   return (
@@ -136,7 +131,7 @@ export function ChatScreen({
           ))}
         </div>
         <p className="relative text-center text-xs text-white/60">
-          ※現在は表情プレビュー用のボタンです。会話中の自動切り替えはStep7で実装します。
+          表情は会話に応じて自動で切り替わります。ボタンで手動プレビューもできます。
         </p>
       </div>
 
@@ -175,10 +170,14 @@ export function ChatScreen({
           )}
         </div>
 
+        {errorMessage && (
+          <p className="px-6 pb-2 text-sm text-red-600">{errorMessage}</p>
+        )}
+
         <form
           onSubmit={(e) => {
             e.preventDefault();
-            handleSend();
+            void handleSend();
           }}
           className="flex gap-2 border-t border-black/[.08] px-6 py-4"
         >
