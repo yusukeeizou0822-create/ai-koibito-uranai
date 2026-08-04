@@ -20,7 +20,7 @@ export const fortuneResultSchema = {
     advice: { type: 'string' },
     luckyItem: { type: 'string' },
     luckyColor: { type: 'string' },
-    score: { type: 'integer', minimum: 1, maximum: 5 },
+    score: { type: 'integer' },
     expression: { type: 'string', enum: ['smile', 'shy', 'worried', 'serious'] },
   },
   required: ['headline', 'body', 'advice', 'luckyItem', 'luckyColor', 'score', 'expression'],

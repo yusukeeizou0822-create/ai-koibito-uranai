@@ -47,5 +47,6 @@ export async function generateFortune({
     throw new Error('AIからの占い結果を取得できませんでした。');
   }
 
-  return JSON.parse(textBlock.text) as FortuneResult;
+  const result = JSON.parse(textBlock.text) as FortuneResult;
+  return { ...result, score: Math.min(5, Math.max(1, Math.round(result.score))) };
 }
