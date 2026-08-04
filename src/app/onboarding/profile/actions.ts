@@ -3,6 +3,7 @@
 import { redirect } from 'next/navigation';
 
 import { auth } from '@/auth';
+import { calculateBaziChart } from '@/lib/bazi';
 import { prisma } from '@/lib/prisma';
 
 type OnboardingInput = {
@@ -48,11 +49,13 @@ export async function submitOnboarding(input: OnboardingInput): Promise<{ error?
     return { error: 'お相手の選択が正しくありません。もう一度選び直してください。' };
   }
 
+  const baziChart = calculateBaziChart(birthDate, null);
+
   await prisma.$transaction([
     prisma.profile.upsert({
       where: { userId },
-      update: { name, birthDate, gender: input.gender },
-      create: { userId, name, birthDate, gender: input.gender },
+      update: { name, birthDate, gender: input.gender, baziChartJson: baziChart },
+      create: { userId, name, birthDate, gender: input.gender, baziChartJson: baziChart },
     }),
     prisma.userCharacterSelection.upsert({
       where: { userId },
