@@ -1,0 +1,171 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ── Auth.js (NextAuth) Prisma Adapter standard models ──────────────────────
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String?   @unique
+  emailVerified DateTime?
+  image         String?
+
+  accounts             Account[]
+  sessions              Session[]
+  profile               Profile?
+  characterSelection    UserCharacterSelection?
+  chatMessages          ChatMessage[]
+  fortuneReadings       FortuneReading[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+// ── Application models ──────────────────────────────────────────────────────
+
+enum Gender {
+  MALE
+  FEMALE
+  OTHER
+}
+
+model Profile {
+  id            String    @id @default(cuid())
+  userId        String    @unique
+  name          String
+  birthDate     DateTime  @db.Date
+  birthTime     DateTime? @db.Time
+  gender        Gender
+  baziChartJson Json?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+enum CharacterType {
+  BOYFRIEND
+  GIRLFRIEND
+}
+
+model Character {
+  id             String        @id @default(cuid())
+  type           CharacterType
+  personalityKey String
+  name           String
+  avatarBaseUrl  String
+
+  personality Personality?
+  selections  UserCharacterSelection[]
+
+  createdAt DateTime @default(now())
+
+  @@unique([type, personalityKey])
+}
+
+model Personality {
+  id            String @id @default(cuid())
+  characterId   String @unique
+  systemPrompt  String @db.Text
+  expressionSet Json
+
+  character Character @relation(fields: [characterId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+}
+
+model UserCharacterSelection {
+  id          String   @id @default(cuid())
+  userId      String   @unique
+  characterId String
+  selectedAt  DateTime @default(now())
+
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  character Character @relation(fields: [characterId], references: [id])
+}
+
+enum MessageRole {
+  USER
+  ASSISTANT
+}
+
+enum Expression {
+  SMILE
+  SHY
+  WORRIED
+  SERIOUS
+}
+
+model ChatMessage {
+  id         String      @id @default(cuid())
+  userId     String
+  role       MessageRole
+  content    String      @db.Text
+  expression Expression?
+  createdAt  DateTime    @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+}
+
+enum FortuneCategory {
+  TODAY
+  LOVE
+}
+
+model FortuneReading {
+  id          String          @id @default(cuid())
+  userId      String
+  category    FortuneCategory
+  resultJson  Json
+  readingDate DateTime        @db.Date
+  createdAt   DateTime        @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, category, readingDate])
+}
