@@ -19,7 +19,7 @@ export default async function OnboardingProfilePage() {
   }
 
   const characters = await prisma.character.findMany({
-    select: { id: true, type: true, personalityKey: true, name: true },
+    select: { id: true, type: true, personalityKey: true, name: true, avatarBaseUrl: true },
     orderBy: [{ type: 'asc' }, { personalityKey: 'asc' }],
   });
 

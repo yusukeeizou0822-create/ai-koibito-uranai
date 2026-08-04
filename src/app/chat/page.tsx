@@ -34,6 +34,7 @@ export default async function ChatPage() {
       character={{
         name: selection.character.name,
         personalityKey: selection.character.personalityKey,
+        avatarUrl: `${selection.character.avatarBaseUrl}.png`,
       }}
       userName={profile.name}
       initialMessages={history.map((message) => ({

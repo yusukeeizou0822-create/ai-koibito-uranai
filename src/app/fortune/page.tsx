@@ -50,6 +50,7 @@ export default async function FortunePage() {
       character={{
         name: selection.character.name,
         personalityKey: selection.character.personalityKey,
+        avatarUrl: `${selection.character.avatarBaseUrl}.png`,
       }}
       fortunes={fortunes}
       errorMessage={errorMessage}

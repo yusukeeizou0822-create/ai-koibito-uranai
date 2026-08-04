@@ -1,6 +1,7 @@
 import Link from 'next/link';
 
-import { characterGradient, defaultCharacterGradient, getCharacterInitial } from '@/lib/characterTheme';
+import { CharacterAvatar } from '@/components/CharacterAvatar';
+import { characterGradient, defaultCharacterGradient } from '@/lib/characterTheme';
 import { fortuneCategoryLabels, type FortuneCategory, type FortuneResult } from '@/lib/fortune';
 
 const EXPRESSION_LABELS: Record<FortuneResult['expression'], string> = {
@@ -49,7 +50,7 @@ export function FortuneScreen({
   fortunes,
   errorMessage,
 }: {
-  character: { name: string; personalityKey: string };
+  character: { name: string; personalityKey: string; avatarUrl: string | null };
   fortunes: Record<FortuneCategory, FortuneResult> | null;
   errorMessage: string | null;
 }) {
@@ -61,9 +62,11 @@ export function FortuneScreen({
         className="relative flex flex-col items-center gap-3 overflow-hidden px-6 py-10"
         style={{ background: gradient }}
       >
-        <div className="flex h-20 w-20 items-center justify-center rounded-full border-4 border-white/30 bg-white/10 text-3xl font-semibold text-white shadow-xl backdrop-blur-sm">
-          {getCharacterInitial(character.name)}
-        </div>
+        <CharacterAvatar
+          name={character.name}
+          avatarUrl={character.avatarUrl}
+          className="h-20 w-20 border-4 border-white/30 bg-white/10 text-3xl font-semibold text-white shadow-xl backdrop-blur-sm"
+        />
         <p className="text-lg font-semibold text-white">{character.name}からの占い</p>
         <Link href="/chat" className="text-xs text-white/70 underline underline-offset-2 hover:text-white">
           チャットに戻る

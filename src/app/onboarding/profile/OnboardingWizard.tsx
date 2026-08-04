@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from 'react';
 
+import { CharacterAvatar } from '@/components/CharacterAvatar';
 import { characterTaglines } from '@/lib/characterTaglines';
 
 import { submitOnboarding } from './actions';
@@ -11,6 +12,7 @@ type CharacterOption = {
   type: 'BOYFRIEND' | 'GIRLFRIEND';
   personalityKey: string;
   name: string;
+  avatarBaseUrl: string;
 };
 
 type Gender = 'MALE' | 'FEMALE';
@@ -147,12 +149,17 @@ export function OnboardingWizard({ characters }: { characters: CharacterOption[]
               key={character.id}
               type="button"
               onClick={() => setCharacterId(character.id)}
-              className={`flex flex-col gap-2 rounded-lg border p-4 text-left transition-colors ${
+              className={`flex flex-col items-center gap-2 rounded-lg border p-4 text-center transition-colors ${
                 selected
                   ? 'border-black bg-black/[.04] dark:border-white dark:bg-white/[.08]'
                   : 'border-black/[.15] hover:bg-black/[.02] dark:border-white/[.2] dark:hover:bg-white/[.04]'
               }`}
             >
+              <CharacterAvatar
+                name={character.name}
+                avatarUrl={`${character.avatarBaseUrl}.png`}
+                className="h-20 w-20 border border-black/[.08] bg-zinc-100 text-2xl font-semibold text-zinc-500 dark:border-white/[.2] dark:bg-zinc-800 dark:text-zinc-300"
+              />
               <span className="text-lg font-semibold text-black dark:text-zinc-50">{character.name}</span>
               <span className="text-sm text-zinc-600 dark:text-zinc-400">
                 {characterTaglines[character.personalityKey]}

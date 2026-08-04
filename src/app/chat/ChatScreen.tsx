@@ -3,7 +3,8 @@
 import Link from 'next/link';
 import { useState } from 'react';
 
-import { characterGradient, defaultCharacterGradient, getCharacterInitial } from '@/lib/characterTheme';
+import { CharacterAvatar } from '@/components/CharacterAvatar';
+import { characterGradient, defaultCharacterGradient } from '@/lib/characterTheme';
 import type { ChatApiResponse, ChatRole, Expression } from '@/lib/chat/types';
 
 type Message = {
@@ -48,7 +49,7 @@ export function ChatScreen({
   userName,
   initialMessages,
 }: {
-  character: { name: string; personalityKey: string };
+  character: { name: string; personalityKey: string; avatarUrl: string | null };
   userName: string;
   initialMessages: Message[];
 }) {
@@ -118,9 +119,11 @@ export function ChatScreen({
           <div className="absolute left-[50%] top-[40%] h-1.5 w-1.5 rounded-full bg-white" />
         </div>
 
-        <div className="relative flex h-48 w-48 items-center justify-center rounded-full border-4 border-white/30 bg-white/10 text-6xl font-semibold text-white shadow-xl backdrop-blur-sm lg:h-64 lg:w-64">
-          {getCharacterInitial(character.name)}
-        </div>
+        <CharacterAvatar
+          name={character.name}
+          avatarUrl={character.avatarUrl}
+          className="relative h-48 w-48 border-4 border-white/30 bg-white/10 text-6xl font-semibold text-white shadow-xl backdrop-blur-sm lg:h-64 lg:w-64"
+        />
 
         <p className="relative text-xl font-semibold text-white">{character.name}</p>
         <p className="relative rounded-full bg-white/15 px-4 py-1 text-sm text-[#E8B4B8]">
