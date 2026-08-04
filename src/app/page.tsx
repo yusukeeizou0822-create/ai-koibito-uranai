@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import { redirect } from 'next/navigation';
 
 import { auth, signOut } from '@/auth';
@@ -32,6 +33,12 @@ export default async function Home() {
       <p className="text-black dark:text-zinc-50">
         ようこそ、{session.user.name ?? 'ゲスト'}さん
       </p>
+      <Link
+        href="/chat"
+        className="rounded-full bg-foreground px-6 py-3 text-background font-medium transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc]"
+      >
+        チャットへ
+      </Link>
       <form
         action={async () => {
           'use server';
