@@ -4,7 +4,8 @@ import { auth } from '@/auth';
 import type { BaziChart } from '@/lib/bazi';
 import { anthropic } from '@/lib/claude';
 import { buildSystemPrompt } from '@/lib/chat/buildSystemPrompt';
-import { chatResponseSchema, type ChatTurn, type Expression } from '@/lib/chat/types';
+import { loadRecentChatHistory, saveChatTurn } from '@/lib/chat/persistence';
+import { chatResponseSchema, type Expression } from '@/lib/chat/types';
 import { prisma } from '@/lib/prisma';
 
 export async function POST(request: NextRequest) {
@@ -14,7 +15,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'ログインが必要です。' }, { status: 401 });
   }
 
-  let body: { message?: string; history?: ChatTurn[] };
+  let body: { message?: string };
   try {
     body = await request.json();
   } catch {
@@ -26,9 +27,8 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'メッセージを入力してください。' }, { status: 400 });
   }
 
-  const history = Array.isArray(body.history) ? body.history : [];
-
-  const [profile, selection] = await Promise.all([
+  const [history, profile, selection] = await Promise.all([
+    loadRecentChatHistory(userId),
     prisma.profile.findUnique({ where: { userId } }),
     prisma.userCharacterSelection.findUnique({
       where: { userId },
@@ -71,6 +71,14 @@ export async function POST(request: NextRequest) {
     }
 
     const parsed = JSON.parse(textBlock.text) as { reply: string; expression: Expression };
+
+    await saveChatTurn({
+      userId,
+      userMessage: message,
+      assistantReply: parsed.reply,
+      assistantExpression: parsed.expression,
+    });
+
     return NextResponse.json(parsed);
   } catch (error) {
     console.error('Claude API error:', error);

@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation';
 
 import { auth } from '@/auth';
+import { loadRecentChatHistory } from '@/lib/chat/persistence';
 import { prisma } from '@/lib/prisma';
 
 import { ChatScreen } from './ChatScreen';
@@ -26,6 +27,8 @@ export default async function ChatPage() {
     redirect('/onboarding/profile');
   }
 
+  const history = await loadRecentChatHistory(userId);
+
   return (
     <ChatScreen
       character={{
@@ -33,6 +36,12 @@ export default async function ChatPage() {
         personalityKey: selection.character.personalityKey,
       }}
       userName={profile.name}
+      initialMessages={history.map((message) => ({
+        id: message.id,
+        role: message.role,
+        content: message.content,
+        expression: message.expression ?? undefined,
+      }))}
     />
   );
 }

@@ -33,17 +33,29 @@ function createInitialMessages(characterName: string, userName: string): Message
   ];
 }
 
+function findLastExpression(messages: Message[]): Expression {
+  for (let i = messages.length - 1; i >= 0; i -= 1) {
+    const { role, expression } = messages[i];
+    if (role === 'assistant' && expression) {
+      return expression;
+    }
+  }
+  return 'smile';
+}
+
 export function ChatScreen({
   character,
   userName,
+  initialMessages,
 }: {
   character: { name: string; personalityKey: string };
   userName: string;
+  initialMessages: Message[];
 }) {
   const [messages, setMessages] = useState<Message[]>(() =>
-    createInitialMessages(character.name, userName),
+    initialMessages.length > 0 ? initialMessages : createInitialMessages(character.name, userName),
   );
-  const [expression, setExpression] = useState<Expression>('smile');
+  const [expression, setExpression] = useState<Expression>(() => findLastExpression(messages));
   const [input, setInput] = useState('');
   const [isReplying, setIsReplying] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
@@ -54,7 +66,6 @@ export function ChatScreen({
     const content = input.trim();
     if (!content || isReplying) return;
 
-    const history = messages.map((m) => ({ role: m.role, content: m.content }));
     const userMessage: Message = {
       id: `user-${Date.now()}`,
       role: 'user',
@@ -69,7 +80,7 @@ export function ChatScreen({
       const res = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: content, history }),
+        body: JSON.stringify({ message: content }),
       });
       const data = await res.json();
 
