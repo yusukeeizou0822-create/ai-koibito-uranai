@@ -52,9 +52,10 @@ export function ChatScreen({
   userName: string;
   initialMessages: Message[];
 }) {
-  const [messages, setMessages] = useState<Message[]>(() =>
-    initialMessages.length > 0 ? initialMessages : createInitialMessages(character.name, userName),
-  );
+  const [messages, setMessages] = useState<Message[]>(() => [
+    ...createInitialMessages(character.name, userName),
+    ...initialMessages,
+  ]);
   const [expression, setExpression] = useState<Expression>(() => findLastExpression(messages));
   const [input, setInput] = useState('');
   const [isReplying, setIsReplying] = useState(false);
