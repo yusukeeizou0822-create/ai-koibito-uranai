@@ -68,14 +68,21 @@ export async function saveChatTurn({
   assistantReply: string;
   assistantExpression: Expression;
 }): Promise<void> {
+  // createManyは単一のINSERT文になり、Postgresのnow()は文単位で1回しか評価されないため、
+  // createdAtを省略すると両行が同一タイムスタンプになり並び順が不定になる。
+  // そのためユーザー発言→AI返信の順が保証されるよう明示的にずらして設定する。
+  const userCreatedAt = new Date();
+  const assistantCreatedAt = new Date(userCreatedAt.getTime() + 1);
+
   await prisma.chatMessage.createMany({
     data: [
-      { userId, role: roleToDb.user, content: userMessage },
+      { userId, role: roleToDb.user, content: userMessage, createdAt: userCreatedAt },
       {
         userId,
         role: roleToDb.assistant,
         content: assistantReply,
         expression: expressionToDb[assistantExpression],
+        createdAt: assistantCreatedAt,
       },
     ],
   });
