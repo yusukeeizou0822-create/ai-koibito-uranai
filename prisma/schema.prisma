@@ -167,5 +167,5 @@ model FortuneReading {
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  @@index([userId, category, readingDate])
+  @@unique([userId, category, readingDate])
 }

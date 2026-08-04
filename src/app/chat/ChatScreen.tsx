@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useState } from 'react';
 
 import { characterGradient, defaultCharacterGradient, getCharacterInitial } from '@/lib/characterTheme';
@@ -137,11 +138,19 @@ export function ChatScreen({
 
       {/* チャットパネル */}
       <div className="flex flex-1 flex-col bg-white lg:min-h-screen">
-        <header className="border-b border-black/[.08] px-6 py-4">
-          <p className="text-lg font-semibold text-[#1A1B3A]">{character.name}</p>
-          <p className="text-xs text-zinc-500">
-            このキャラクターはAIであり、実在の人物ではありません。
-          </p>
+        <header className="flex items-center justify-between border-b border-black/[.08] px-6 py-4">
+          <div>
+            <p className="text-lg font-semibold text-[#1A1B3A]">{character.name}</p>
+            <p className="text-xs text-zinc-500">
+              このキャラクターはAIであり、実在の人物ではありません。
+            </p>
+          </div>
+          <Link
+            href="/fortune"
+            className="rounded-full bg-[#6B4E9E]/10 px-4 py-2 text-xs font-medium text-[#6B4E9E] transition-colors hover:bg-[#6B4E9E]/20"
+          >
+            今日の占いを見る
+          </Link>
         </header>
 
         <div className="flex flex-1 flex-col gap-3 overflow-y-auto px-6 py-6">
