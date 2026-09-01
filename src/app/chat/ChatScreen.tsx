@@ -1,10 +1,10 @@
 'use client';
 
+import Image from 'next/image';
 import Link from 'next/link';
 import { useState } from 'react';
 
-import { CharacterAvatar } from '@/components/CharacterAvatar';
-import { characterGradient, defaultCharacterGradient } from '@/lib/characterTheme';
+import { getCharacterInitial } from '@/lib/characterTheme';
 import type { ChatApiResponse, ChatRole, Expression } from '@/lib/chat/types';
 
 type Message = {
@@ -12,15 +12,6 @@ type Message = {
   role: ChatRole;
   content: string;
   expression?: Expression;
-};
-
-const EXPRESSION_ORDER: Expression[] = ['smile', 'shy', 'worried', 'serious'];
-
-const EXPRESSION_LABELS: Record<Expression, string> = {
-  smile: '笑顔',
-  shy: '照れ',
-  worried: '心配',
-  serious: '真剣',
 };
 
 function createInitialMessages(characterName: string, userName: string): Message[] {
@@ -57,12 +48,18 @@ export function ChatScreen({
     ...createInitialMessages(character.name, userName),
     ...initialMessages,
   ]);
+  // expressionは会話に応じて自動更新される。現状はキャラクターにつき画像が1枚のみのため表示には未反映だが、
+  // 表情ごとの立ち絵が揃った際にすぐ組み込めるよう、state管理ロジックのみ先行して残している。
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars -- 上記の理由によりexpression自体は未参照
   const [expression, setExpression] = useState<Expression>(() => findLastExpression(messages));
   const [input, setInput] = useState('');
   const [isReplying, setIsReplying] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
+  const [avatarFailed, setAvatarFailed] = useState(false);
 
-  const gradient = characterGradient[character.personalityKey] ?? defaultCharacterGradient;
+  const showAvatarImage = Boolean(character.avatarUrl) && !avatarFailed;
+  const latestMessage = messages[messages.length - 1];
+  const latestSpeakerName = latestMessage?.role === 'user' ? userName : character.name;
 
   async function handleSend() {
     const content = input.trim();
@@ -105,112 +102,69 @@ export function ChatScreen({
   }
 
   return (
-    <div className="flex min-h-screen flex-col lg:flex-row" style={{ backgroundColor: '#1A1B3A' }}>
-      {/* 立ち絵パネル */}
-      <div
-        className="relative flex flex-col items-center justify-center gap-4 overflow-hidden px-6 py-10 lg:w-2/5 lg:min-h-screen"
-        style={{ background: gradient }}
-      >
-        <div className="pointer-events-none absolute inset-0 opacity-40">
-          <div className="absolute left-[15%] top-[20%] h-1 w-1 rounded-full bg-white" />
-          <div className="absolute left-[70%] top-[15%] h-1.5 w-1.5 rounded-full bg-white" />
-          <div className="absolute left-[30%] top-[70%] h-1 w-1 rounded-full bg-white" />
-          <div className="absolute left-[80%] top-[60%] h-1 w-1 rounded-full bg-white" />
-          <div className="absolute left-[50%] top-[40%] h-1.5 w-1.5 rounded-full bg-white" />
-        </div>
-
-        <CharacterAvatar
-          name={character.name}
-          avatarUrl={character.avatarUrl}
-          className="relative h-48 w-48 border-4 border-white/30 bg-white/10 text-6xl font-semibold text-white shadow-xl backdrop-blur-sm lg:h-64 lg:w-64"
-        />
-
-        <p className="relative text-xl font-semibold text-white">{character.name}</p>
-        <p className="relative rounded-full bg-white/15 px-4 py-1 text-sm text-[#E8B4B8]">
-          {EXPRESSION_LABELS[expression]}
-        </p>
-
-        <div className="relative mt-2 flex flex-wrap justify-center gap-2">
-          {EXPRESSION_ORDER.map((e) => (
-            <button
-              key={e}
-              type="button"
-              onClick={() => setExpression(e)}
-              className={`rounded-full px-3 py-1 text-xs transition-colors ${
-                e === expression
-                  ? 'bg-[#E8B4B8] text-[#1A1B3A]'
-                  : 'bg-white/10 text-white hover:bg-white/20'
-              }`}
-            >
-              {EXPRESSION_LABELS[e]}
-            </button>
-          ))}
-        </div>
-        <p className="relative text-center text-xs text-white/60">
-          表情は会話に応じて自動で切り替わります。ボタンで手動プレビューもできます。
-        </p>
+    <div className="relative h-screen w-full overflow-hidden bg-white">
+      {/* キャラクター立ち絵（全画面表示。画像・ページとも背景色を白で統一） */}
+      <div className="absolute inset-0">
+        {showAvatarImage ? (
+          // 表情ごとの立ち絵画像が揃ったら、ここでexpressionの値に応じて表示するsrcを切り替える
+          <Image
+            src={character.avatarUrl as string}
+            alt={character.name}
+            fill
+            sizes="100vw"
+            priority
+            className="object-contain object-bottom"
+            onError={() => setAvatarFailed(true)}
+          />
+        ) : (
+          <div className="flex h-full w-full items-center justify-center text-[10rem] font-semibold text-zinc-200">
+            {getCharacterInitial(character.name)}
+          </div>
+        )}
       </div>
 
-      {/* チャットパネル */}
-      <div className="flex flex-1 flex-col bg-white lg:min-h-screen">
-        <header className="flex items-center justify-between border-b border-black/[.08] px-6 py-4">
-          <div>
-            <p className="text-lg font-semibold text-[#1A1B3A]">{character.name}</p>
-            <p className="text-xs text-zinc-500">
-              このキャラクターはAIであり、実在の人物ではありません。
-            </p>
-          </div>
-          <Link
-            href="/fortune"
-            className="rounded-full bg-[#6B4E9E]/10 px-4 py-2 text-xs font-medium text-[#6B4E9E] transition-colors hover:bg-[#6B4E9E]/20"
-          >
-            今日の占いを見る
-          </Link>
-        </header>
+      {/* 左上: 今日の占いを見る（menuとは独立したボタン） */}
+      <Link
+        href="/fortune"
+        className="absolute left-4 top-4 z-20 rounded-full bg-black/40 px-4 py-2 text-xs font-medium text-white backdrop-blur-md transition-colors hover:bg-black/55"
+      >
+        今日の占いを見る
+      </Link>
 
-        <div className="flex flex-1 flex-col gap-3 overflow-y-auto px-6 py-6">
-          {messages.map((message) => (
-            <div
-              key={message.id}
-              className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
-            >
-              <div
-                className={`max-w-[75%] rounded-2xl px-4 py-2 text-sm ${
-                  message.role === 'user'
-                    ? 'bg-[#6B4E9E] text-white'
-                    : 'border border-black/[.06] bg-zinc-50 text-[#1A1B3A]'
-                }`}
-              >
-                {message.content}
-              </div>
-            </div>
-          ))}
-          {isReplying && (
-            <div className="flex justify-start">
-              <div className="max-w-[75%] rounded-2xl border border-black/[.06] bg-zinc-50 px-4 py-2 text-sm text-zinc-400">
-                入力中...
-              </div>
-            </div>
-          )}
-        </div>
+      {/* 右上: menuボタン（会話履歴一覧画面へ遷移） */}
+      <Link
+        href="/chat/history"
+        className="absolute right-4 top-4 z-20 rounded-full bg-black/40 px-4 py-2 text-xs font-medium text-white backdrop-blur-md transition-colors hover:bg-black/55"
+      >
+        menu
+      </Link>
 
+      {/* 下部: セリフ吹き出し + 常時入力欄 */}
+      <div className="absolute inset-x-0 bottom-0 z-10 flex flex-col gap-3 bg-gradient-to-t from-black/70 via-black/35 to-transparent px-4 pb-4 pt-20 sm:px-8 sm:pb-6">
         {errorMessage && (
-          <p className="px-6 pb-2 text-sm text-red-600">{errorMessage}</p>
+          <p className="rounded-lg bg-red-500/80 px-4 py-2 text-sm text-white">{errorMessage}</p>
         )}
+
+        <div className="rounded-2xl bg-black/50 px-5 py-4 text-white shadow-lg backdrop-blur-md">
+          <p className="text-sm font-semibold text-[#E8B4B8]">{latestSpeakerName}</p>
+          <p className="mt-1 text-base leading-relaxed">
+            {isReplying ? '入力中...' : latestMessage?.content}
+          </p>
+        </div>
 
         <form
           onSubmit={(e) => {
             e.preventDefault();
             void handleSend();
           }}
-          className="flex gap-2 border-t border-black/[.08] px-6 py-4"
+          className="flex gap-2"
         >
           <input
             type="text"
             value={input}
             onChange={(e) => setInput(e.target.value)}
             placeholder="メッセージを入力..."
-            className="flex-1 rounded-full border border-black/[.15] px-4 py-2 text-sm text-[#1A1B3A] outline-none focus:border-[#6B4E9E]"
+            className="flex-1 rounded-full border border-white/20 bg-white/90 px-4 py-2 text-sm text-[#1A1B3A] outline-none focus:border-[#6B4E9E]"
           />
           <button
             type="submit"
@@ -220,6 +174,10 @@ export function ChatScreen({
             送信
           </button>
         </form>
+
+        <p className="text-center text-[10px] text-white/60">
+          このキャラクターはAIであり、実在の人物ではありません。
+        </p>
       </div>
     </div>
   );
